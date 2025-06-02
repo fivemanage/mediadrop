@@ -9,9 +9,24 @@ export const envSchema = z.object({
   STORAGE_PUBLIC_URL: z.string().url().optional(),
   STORAGE_ENDPOINT: z.string().url().optional(),
   STORAGE_REGION: z.string().optional(),
+  MAX_FILE_SIZE: z.string().optional(), // e.g., '100mb', '20mb'
 })
 
-export type EnvConfig = z.infer<typeof envSchema>
+export type EnvConfig = z.infer<typeof envSchema> & { MAX_FILE_SIZE_BYTES?: number }
+
+function parseFileSize(size: string | undefined): number | undefined {
+  if (!size) return undefined;
+  const match = size.trim().toLowerCase().match(/^(\d+)(mb|kb|gb)$/);
+  if (!match) throw new Error('MAX_FILE_SIZE must be like "100mb", "20mb", etc');
+  const value = parseInt(match[1], 10);
+  const unit = match[2];
+  switch (unit) {
+    case 'kb': return value * 1024;
+    case 'mb': return value * 1024 * 1024;
+    case 'gb': return value * 1024 * 1024 * 1024;
+    default: throw new Error('Unknown unit for MAX_FILE_SIZE');
+  }
+}
 
 // Validate environment variables
 export function validateEnv() {
@@ -37,5 +52,15 @@ export function validateEnv() {
     throw new Error("R2 storage requires STORAGE_ENDPOINT to be set")
   }
 
-  return result.data
+  // Parse MAX_FILE_SIZE to bytes
+  let MAX_FILE_SIZE_BYTES: number | undefined = undefined;
+  if (result.data.MAX_FILE_SIZE) {
+    MAX_FILE_SIZE_BYTES = parseFileSize(result.data.MAX_FILE_SIZE);
+  }
+
+  return { ...result.data, MAX_FILE_SIZE_BYTES };
+}
+
+export function getMaxFileSizeBytes(): number | undefined {
+  return validateEnv().MAX_FILE_SIZE_BYTES;
 }

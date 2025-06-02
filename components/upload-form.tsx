@@ -16,8 +16,31 @@ type FileWithPreview = {
   url?: string // URL for completed uploads
 }
 
+function parseFileSize(size: string | undefined): number {
+  if (!size) return 100 * 1024 * 1024; // default 100MB
+  const match = size.trim().toLowerCase().match(/^(\d+)(mb|kb|gb)$/);
+  if (!match) return 100 * 1024 * 1024;
+  const value = parseInt(match[1], 10);
+  const unit = match[2];
+  switch (unit) {
+    case 'kb': return value * 1024;
+    case 'mb': return value * 1024 * 1024;
+    case 'gb': return value * 1024 * 1024 * 1024;
+    default: return 100 * 1024 * 1024;
+  }
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes >= 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  if (bytes >= 1024) return `${(bytes / 1024).toFixed(2)} KB`;
+  return `${bytes} bytes`;
+}
+
 export function UploadForm() {
   const [files, setFiles] = useState<FileWithPreview[]>([])
+
+  const maxFileSize = parseFileSize(process.env.NEXT_PUBLIC_MAX_FILE_SIZE)
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const newFiles = acceptedFiles.map((file) => ({
@@ -38,7 +61,7 @@ export function UploadForm() {
       "video/*": [],
       "audio/*": [],
     },
-    maxSize: 100 * 1024 * 1024, // 100MB
+    maxSize: maxFileSize, // use env value
   })
 
   // Upload files one by one with progress tracking
@@ -147,7 +170,7 @@ export function UploadForm() {
             <Upload className="h-10 w-10 text-muted-foreground" />
             <h3 className="text-lg font-semibold">{isDragActive ? "Drop files here" : "Drag & drop files here"}</h3>
             <p className="text-sm text-muted-foreground">or click to browse files</p>
-            <p className="text-xs text-muted-foreground mt-2">Supports images, videos, and audio files up to 100MB</p>
+            <p className="text-xs text-muted-foreground mt-2">Supports images, videos, and audio files up to {formatFileSize(maxFileSize)}</p>
           </div>
         </div>
 

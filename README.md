@@ -13,6 +13,8 @@ MediaDrop is a self-hosted solution for letting your players upload images or vi
   - This is your domain connected to the bucket. Example: `https://i.yourdomain.com`
 - `STORAGE_ENDPOINT`
 - `STORAGE_REGION`
+- `MAX_FILE_SIZE`
+  - Optional. Set the maximum allowed file upload size (e.g., `100mb`, `20mb`, `1gb`). Defaults to 100mb if not set.
 
 ### Deployment
 

@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getStorageProvider } from "@/lib/storage"
-import {envSchema, validateEnv} from "@/lib/config"
+import {envSchema, validateEnv, getMaxFileSizeBytes} from "@/lib/config"
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,6 +25,12 @@ export async function POST(request: NextRequest) {
 
     // Get the file buffer
     const buffer = await file.arrayBuffer()
+
+    // Enforce file size limit
+    const maxFileSize = getMaxFileSizeBytes();
+    if (maxFileSize && buffer.byteLength > maxFileSize) {
+      return NextResponse.json({ error: `File exceeds the maximum allowed size of ${maxFileSize} bytes.` }, { status: 400 })
+    }
 
     // Upload to storage provider - no progress tracking
     const result = await storage.upload({
