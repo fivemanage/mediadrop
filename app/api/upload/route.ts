@@ -1,9 +1,24 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getStorageProvider } from "@/lib/storage"
 import {envSchema, validateEnv, getMaxFileSizeBytes} from "@/lib/config"
+import { unsealData } from "iron-session"
+import { sessionOptions, DiscordSessionUser } from "@/lib/session"
 
 export async function POST(request: NextRequest) {
   try {
+    // Manually parse and unseal session cookie
+    const cookieName = sessionOptions.cookieName
+    const sessionCookie = request.cookies.get(cookieName)?.value
+    let user: DiscordSessionUser | undefined = undefined
+    if (sessionCookie) {
+      const session = await unsealData(sessionCookie, { password: sessionOptions.password })
+      user = (session as any).user
+    }
+    const requiredRole = process.env.DISCORD_ROLE_ID
+    if (!user || !user.roles || !user.roles.includes(requiredRole!)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     // Get the form data
     const formData = await request.formData()
     const file = formData.get("file") as File
