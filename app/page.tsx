@@ -1,6 +1,19 @@
 import { UploadForm } from "@/components/upload-form"
+import { cookies } from "next/headers"
+import { sessionOptions } from "@/lib/session"
+import { redirect } from "next/navigation"
 
-export default function Home() {
+export default async function Home() {
+  // Check if Discord envs are set
+  const discordEnabled = Boolean(process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET && process.env.DISCORD_GUILD_ID && process.env.DISCORD_ROLE_ID)
+  if (discordEnabled) {
+    // Check for session cookie
+    const cookieStore = await cookies()
+    const sessionCookie = cookieStore.get(sessionOptions.cookieName)?.value
+    if (!sessionCookie) {
+      redirect("/login")
+    }
+  }
   return (
     <div className="min-h-screen flex flex-col">
       <header className="border-b">
